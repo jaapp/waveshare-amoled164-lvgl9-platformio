@@ -37,6 +37,7 @@ This project demonstrates how to run **LVGL 9.x** with touch support on the **Wa
 
 The `platformio.ini` file is pre-configured with:
 
+- **Platform**: PioArduino ESP32 (ESP32 3.0 core for Arduino_GFX compatibility)
 - **Board**: ESP32-S3 DevKit C1 (compatible)
 - **Framework**: Arduino
 - **CPU Frequency**: 240MHz
@@ -140,6 +141,7 @@ LVGL configuration file located in project root. Key settings:
 
 ### `platformio.ini`
 PlatformIO configuration with ESP32-S3 specific settings:
+- **Platform**: Uses PioArduino ESP32 platform (ESP32 3.0 core) for full Arduino_GFX compatibility
 - Board configuration matching Arduino IDE
 - Automatic dependency management
 - Build optimization flags
