@@ -16,8 +16,7 @@
  Arduino_GFX *g = new Arduino_CO5300(
      bus, 21 /* RST */, 0 /* rotation */, 280 /* width */, 456 /* height */,
      20 /* col offset 1 */, 0 /* row offset 1 */, 180 /* col_offset2 */, 24 /* row_offset2 */);
- Arduino_Canvas *gfx = new Arduino_Canvas(
-     280 /* width */, 456 /* height */, g, 0, 0, 0);
+ Arduino_GFX *gfx = g;
  
  /*******************************************************************************
   * FT3168 Touch driver (minimal, single finger)
@@ -142,13 +141,26 @@
  lv_color_t *disp_draw_buf;
  
  uint32_t millis_cb(void) { return millis(); }
+
+void my_disp_rounder_cb(lv_event_t *e)
+{
+  lv_area_t *area = (lv_area_t *)lv_event_get_param(e);
+  
+  // Round to full width to avoid rendering artifacts
+  area->x1 = 0;
+  area->x2 = screenWidth - 1;
+}
  
  void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
  {
    uint32_t w = lv_area_get_width(area);
    uint32_t h = lv_area_get_height(area);
  
-   gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
+   if (LV_COLOR_16_SWAP) {
+    gfx->draw16bitBeRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
+  } else {
+    gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
+  }
  
    lv_disp_flush_ready(disp);
  }
@@ -172,13 +184,14 @@
    screenWidth = gfx->width();
    screenHeight = gfx->height();
    bufSize = screenWidth * 40;
-   disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+   disp_draw_buf = (lv_color_t *)heap_caps_aligned_alloc(LV_DRAW_BUF_ALIGN, bufSize * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
    if (!disp_draw_buf)
-     disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_8BIT);
+     disp_draw_buf = (lv_color_t *)heap_caps_aligned_alloc(LV_DRAW_BUF_ALIGN, bufSize * 2, MALLOC_CAP_8BIT);
    
    disp = lv_display_create(screenWidth, screenHeight);
    lv_display_set_flush_cb(disp, my_disp_flush);
    lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
+  lv_display_add_event_cb(disp, my_disp_rounder_cb, LV_EVENT_INVALIDATE_AREA, NULL);
  
    // Init touch
    ft3168_init();
@@ -199,7 +212,6 @@
  
  void loop()
  {
-   lv_task_handler();
-   gfx->flush();
-   delay(5);
+   uint32_t delay_ms = lv_timer_handler();
+   delay(delay_ms);
  }
